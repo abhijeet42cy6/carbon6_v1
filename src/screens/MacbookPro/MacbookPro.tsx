@@ -178,7 +178,10 @@ export const MacbookPro = (): JSX.Element => {
           wheelListener.current = (e: WheelEvent) => {
             setScrollProgress(prev => {
               // Move progress forward (scroll down) or backward (scroll up).
-              const newProgress = Math.max(0, Math.min(1, prev + (e.deltaY / (vh * 3))));
+              const newProgress = Math.max(
+                0,
+                Math.min(1, prev + (e.deltaY / (vh * 6)))
+              );
               
               // Update animation step
               const step = Math.floor(newProgress * (images.length - 1));
@@ -253,35 +256,16 @@ export const MacbookPro = (): JSX.Element => {
     if (!parallaxSectionRef.current) return;
 
     const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry.isIntersecting && entry.intersectionRatio > 0.4 && !isLocked.current) {
-          // Manually invoke the same lock behaviour as handleScroll would
-          const vh = window.innerHeight;
-          isLocked.current = true;
-          lastScrollPosition.current = window.scrollY;
-          document.body.style.overflow = 'hidden';
-
-          wheelListener.current = (e: WheelEvent) => {
-            setScrollProgress((prev) => {
-              const newProgress = Math.max(0, Math.min(1, prev + e.deltaY / (vh * 3)));
-              setAnimationStep(Math.floor(newProgress * (images.length - 1)));
-
-              if (newProgress <= 0.001 || newProgress >= 0.999) {
-                isLocked.current = false;
-                document.body.style.overflow = '';
-                if (wheelListener.current) {
-                  window.removeEventListener('wheel', wheelListener.current);
-                  wheelListener.current = null;
-                }
-              }
-              return newProgress;
-            });
-          };
-          window.addEventListener('wheel', wheelListener.current);
+      ([entry]) => {
+        if (entry.isIntersecting && !isLocked.current) {
+          lockParallax();
         }
       },
-      { threshold: [0, 0.4, 1] }
+      {
+        root: null,
+        threshold: 0.1,
+        rootMargin: '0px 0px -50% 0px'
+      }
     );
 
     observer.observe(parallaxSectionRef.current);
