@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Carbon6 - AI Sustainability Analyst</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link href="tailwind.css" rel="stylesheet" />
+    <link href="/fonts/fonts.css" rel="stylesheet" />
+    <style>
+      /* Force important styles */
+      .heading-override,
+      .heading-override * {
+        width: 997px !important;
+        height: 154px !important;
+        min-height: 154px !important;
+        max-height: 154px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+      }
+      
+      /* Hide scrollbars but keep scroll functionality */
+      body, html {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+      }
+      
+      body::-webkit-scrollbar, 
+      div::-webkit-scrollbar {
+        display: none; /* Chrome, Safari and Opera */
+        width: 0;
+        background: transparent;
+      }
+
+      /* Animation for scroll guide fade in/out */
+      @keyframes fadeInOut {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.8; }
+      }
+
+      /* Animation for scroll guide dot */
+      @keyframes scrollDown {
+        0% { 
+          transform: translate(-50%, 0);
+          opacity: 1;
+        }
+        75% {
+          transform: translate(-50%, 200%);
+          opacity: 0;
+        }
+        76%, 100% {
+          transform: translate(-50%, 0);
+          opacity: 0;
+        }
+      }
+
+      /* Animation for floating particles */
+      @keyframes float {
+        from {
+          transform: translateY(0) translateX(0);
+        }
+        25% {
+          transform: translateY(-20px) translateX(10px);
+        }
+        50% {
+          transform: translateY(-40px) translateX(-10px);
+        }
+        75% {
+          transform: translateY(-20px) translateX(5px);
+        }
+        to {
+          transform: translateY(0) translateX(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./src/index.tsx"></script>
+  </body>
+</html>

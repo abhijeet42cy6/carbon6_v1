@@ -1,0 +1,29 @@
+@font-face {
+  font-family: 'Alliance No.2-Light';
+  src: url('/fonts/Alliance No.2 Light/Alliance No.2 Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fallbacks for other fonts that were mentioned in the design */
+@font-face {
+  font-family: 'Alliance No.2-Bold';
+  src: local('Arial Bold'), local('Helvetica Bold');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono NL-SemiBold';
+  src: local('Courier New Bold'), local('Consolas Bold');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Helvetica Neue-Light';
+  src: local('Helvetica Neue Light'), local('Helvetica Light'), local('Arial');
+  font-weight: 300;
+  font-style: normal;
+} 

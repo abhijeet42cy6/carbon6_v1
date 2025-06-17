@@ -1,0 +1,96 @@
+:root {
+  --tile-width: 74.27px;
+  --tile-height: 27.53px;
+  --tile-border-color: rgba(255, 255, 255, 0.02);
+  --tile-bg-color: rgba(255, 255, 255, 0.2);
+  --spotlight-color: rgba(255, 255, 255, 0.15);
+}
+
+.tiled-background-wrapper {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+.tiled-background-wrapper > * {
+    position: relative;
+    z-index: 2;
+}
+
+.tiles-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile-width), 1fr));
+  grid-template-rows: repeat(auto-fill, minmax(var(--tile-height), 1fr));
+  z-index: 1;
+}
+
+.tile {
+  width: var(--tile-width);
+  height: var(--tile-height);
+  position: relative;
+  border-right: 1px solid var(--tile-border-color);
+  border-bottom: 1px solid var(--tile-border-color);
+  background-color: transparent;
+  box-sizing: border-box;
+}
+
+/* common overlay for pulsing borders */
+.tile--border-pulse::after,
+.tile--pulsing::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--tile-border-color);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* 11% tiles – border only */
+.tile--border-pulse::after {
+  animation: borderPulse 10s infinite;
+}
+
+/* 8% tiles – background + border */
+.tile--pulsing {
+  animation: bgPulse 10s infinite;
+}
+.tile--pulsing::after {
+  animation: borderPulse 10s infinite;
+}
+
+@keyframes bgPulse {
+  0%,100% { background-color: transparent; }
+  50%     { background-color: var(--tile-bg-color); }
+}
+
+@keyframes borderPulse {
+  0%,100% { border-color: var(--tile-border-color); }
+  50%     { border-color: var(--tile-bg-color); }
+}
+
+/* .tiled-background-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(
+        circle at var(--mouse-x) var(--mouse-y),
+        var(--spotlight-color),
+        transparent 300px
+    );
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 1;
+}
+
+.tiled-background-wrapper:hover::before {
+    opacity: 1;
+} */ 
