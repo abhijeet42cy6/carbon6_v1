@@ -248,6 +248,47 @@ export const MacbookPro = (): JSX.Element => {
     });
   }, []);
 
+  // IntersectionObserver to guarantee we lock when user blasts through quickly
+  useEffect(() => {
+    if (!parallaxSectionRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && entry.intersectionRatio > 0.4 && !isLocked.current) {
+          // Manually invoke the same lock behaviour as handleScroll would
+          const vh = window.innerHeight;
+          isLocked.current = true;
+          lastScrollPosition.current = window.scrollY;
+          document.body.style.overflow = 'hidden';
+
+          wheelListener.current = (e: WheelEvent) => {
+            setScrollProgress((prev) => {
+              const newProgress = Math.max(0, Math.min(1, prev + e.deltaY / (vh * 3)));
+              setAnimationStep(Math.floor(newProgress * (images.length - 1)));
+
+              if (newProgress <= 0.001 || newProgress >= 0.999) {
+                isLocked.current = false;
+                document.body.style.overflow = '';
+                if (wheelListener.current) {
+                  window.removeEventListener('wheel', wheelListener.current);
+                  wheelListener.current = null;
+                }
+              }
+              return newProgress;
+            });
+          };
+          window.addEventListener('wheel', wheelListener.current);
+        }
+      },
+      { threshold: [0, 0.4, 1] }
+    );
+
+    observer.observe(parallaxSectionRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
   // Hide scroll guide after first interaction
   useEffect(() => {
     const handleScroll = () => {
