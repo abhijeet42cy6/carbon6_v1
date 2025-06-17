@@ -74,39 +74,6 @@ const texts = [
 // Height of the carousel (image/text) container in pixels
 const CAROUSEL_HEIGHT = 540;
 
-// helper: lock page and attach wheel listener
-const lockParallax = () => {
-  if (isLocked.current) return;
-
-  const vh = window.innerHeight;
-  isLocked.current = true;
-  lastScrollPosition.current = window.scrollY;
-  document.body.style.overflow = 'hidden';
-
-  wheelListener.current = (e: WheelEvent) => {
-    setScrollProgress((prev) => {
-      const newProgress = Math.max(
-        0,
-        Math.min(1, prev + e.deltaY / (vh * 6))   // same divisor
-      );
-
-      setAnimationStep(Math.floor(newProgress * (images.length - 1)));
-
-      // unlock at either end
-      if (newProgress <= 0.001 || newProgress >= 0.999) {
-        isLocked.current = false;
-        document.body.style.overflow = '';
-        if (wheelListener.current) {
-          window.removeEventListener('wheel', wheelListener.current);
-          wheelListener.current = null;
-        }
-      }
-      return newProgress;
-    });
-  };
-  window.addEventListener('wheel', wheelListener.current);
-};
-
 export const MacbookPro = (): JSX.Element => {
   // Ref and state for scroll-driven parallax animation
   const parallaxSectionRef = useRef<HTMLDivElement>(null);
@@ -177,6 +144,42 @@ export const MacbookPro = (): JSX.Element => {
       progress: "66%",
     },
   ];
+
+  // helper: lock page and attach wheel listener
+  const lockParallax = () => {
+    if (isLocked.current) return;
+
+    const vh = window.innerHeight;
+    isLocked.current = true;
+    lastScrollPosition.current = window.scrollY;
+    document.body.style.overflow = 'hidden';
+
+    wheelListener.current = (e: WheelEvent) => {
+      e.preventDefault(); // Prevent default scroll
+      setScrollProgress((prev: number) => {
+        const newProgress = Math.max(
+          0,
+          Math.min(1, prev + e.deltaY / (vh * 4))   // Increased sensitivity by reducing divisor
+        );
+
+        setAnimationStep(Math.floor(newProgress * (images.length - 1)));
+
+        // Only unlock at the very ends and after a small delay
+        if (newProgress <= 0 || newProgress >= 1) {
+          setTimeout(() => {
+            isLocked.current = false;
+            document.body.style.overflow = '';
+            if (wheelListener.current) {
+              window.removeEventListener('wheel', wheelListener.current);
+              wheelListener.current = null;
+            }
+          }, 100); // Small delay before unlocking
+        }
+        return newProgress;
+      });
+    };
+    window.addEventListener('wheel', wheelListener.current, { passive: false });
+  };
 
   // Scroll-driven parallax effect
   useEffect(() => {
@@ -264,8 +267,8 @@ export const MacbookPro = (): JSX.Element => {
       },
       {
         root: null,
-        threshold: 0,
-        rootMargin: '0px 0px -40% 0px'
+        threshold: [0, 0.1, 0.2], // Multiple thresholds for better detection
+        rootMargin: '-20% 0px -20% 0px' // Adjusted margins for earlier triggering
       }
     );
 
@@ -698,7 +701,7 @@ export const MacbookPro = (): JSX.Element => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Row 2 */}
                 <div className="flex">
                   <div className="w-[312px] p-2 bg-white text-black border-b border-solid border-gray-300">
@@ -739,7 +742,7 @@ export const MacbookPro = (): JSX.Element => {
               src="/Last-CTA-wallpaper.png" 
               alt="Blue gradient background" 
               className="w-full h-full object-cover"
-            />
+          />
           </div>
           
           {/* Semi-transparent overlay for depth */}
