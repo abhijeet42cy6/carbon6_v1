@@ -240,6 +240,14 @@ export const MacbookPro = (): JSX.Element => {
 
   const [particles] = useState(createParticles());
 
+  // Pre-load parallax images so they are cached before the section appears
+  useEffect(() => {
+    images.forEach((path) => {
+      const img = new Image();
+      img.src = `/${path}`;
+    });
+  }, []);
+
   // Hide scroll guide after first interaction
   useEffect(() => {
     const handleScroll = () => {
