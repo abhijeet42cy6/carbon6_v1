@@ -83,7 +83,6 @@ export const MacbookPro = (): JSX.Element => {
   const isLocked = useRef(false);
   const lastScrollPosition = useRef(0);
   const wheelListener = useRef<((e: WheelEvent) => void) | null>(null);
-  const hasCompletedSequence = useRef(false);
   const [showScrollGuide, setShowScrollGuide] = useState(true);
 
   // Data for the tabs section
@@ -159,14 +158,17 @@ export const MacbookPro = (): JSX.Element => {
       const viewportCenter = vh / 2;
       const distanceFromCenter = Math.abs(contentCenter - viewportCenter);
 
-      // Reset sequence completion when scrolled back up (content is below viewport)
+      // Snap progress to 0 or 1 when the user fully exits the section so the
+      // next entry starts at the corresponding edge.
       if (rect.top > vh) {
-        hasCompletedSequence.current = false;
         setScrollProgress(0);
       }
+      if (rect.bottom < 0) {
+        setScrollProgress(1);
+      }
 
-      // Only start animation when content is very close to center (within 50px)
-      if (distanceFromCenter < 50 && !hasCompletedSequence.current) {
+      // Lock whenever the section is centred and we're not already locked.
+      if (distanceFromCenter < 50 && !isLocked.current) {
         if (!isLocked.current) {
           isLocked.current = true;
           lastScrollPosition.current = window.scrollY;
@@ -175,15 +177,15 @@ export const MacbookPro = (): JSX.Element => {
           // Set up wheel event listener when locked
           wheelListener.current = (e: WheelEvent) => {
             setScrollProgress(prev => {
-              const newProgress = Math.max(0, Math.min(1, prev + (e.deltaY / (vh * 3)))); // Adjusted divisor for better control
+              // Move progress forward (scroll down) or backward (scroll up).
+              const newProgress = Math.max(0, Math.min(1, prev + (e.deltaY / (vh * 3))));
               
               // Update animation step
               const step = Math.floor(newProgress * (images.length - 1));
               setAnimationStep(step);
 
-              // Only unlock when truly at the end
-              if (newProgress >= 0.999) { // Changed from 0.99 to 0.999 to ensure we reach the last image
-                hasCompletedSequence.current = true;
+              // Unlock when we reach either edge (0 or 1)
+              if (newProgress <= 0.001 || newProgress >= 0.999) {
                 isLocked.current = false;
                 document.body.style.overflow = '';
                 if (wheelListener.current) {
@@ -513,7 +515,7 @@ export const MacbookPro = (): JSX.Element => {
                   }}
                 />
               ))}
-            </div>
+          </div>
 
             {/* Left side - Image Container - Now sticky */}
             <div className="w-[600px] relative" style={{ position: 'sticky', top: '50%', transform: 'translateY(calc(-50% + 300px))' }}>
@@ -637,7 +639,7 @@ export const MacbookPro = (): JSX.Element => {
             <TiledBackground>
               <></>
             </TiledBackground>
-          </div>
+                </div>
         </section>
 
         {/* White Container Section with Table */}
