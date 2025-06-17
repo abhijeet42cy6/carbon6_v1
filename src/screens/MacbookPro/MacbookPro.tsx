@@ -74,6 +74,39 @@ const texts = [
 // Height of the carousel (image/text) container in pixels
 const CAROUSEL_HEIGHT = 540;
 
+// helper: lock page and attach wheel listener
+const lockParallax = () => {
+  if (isLocked.current) return;
+
+  const vh = window.innerHeight;
+  isLocked.current = true;
+  lastScrollPosition.current = window.scrollY;
+  document.body.style.overflow = 'hidden';
+
+  wheelListener.current = (e: WheelEvent) => {
+    setScrollProgress((prev) => {
+      const newProgress = Math.max(
+        0,
+        Math.min(1, prev + e.deltaY / (vh * 6))   // same divisor
+      );
+
+      setAnimationStep(Math.floor(newProgress * (images.length - 1)));
+
+      // unlock at either end
+      if (newProgress <= 0.001 || newProgress >= 0.999) {
+        isLocked.current = false;
+        document.body.style.overflow = '';
+        if (wheelListener.current) {
+          window.removeEventListener('wheel', wheelListener.current);
+          wheelListener.current = null;
+        }
+      }
+      return newProgress;
+    });
+  };
+  window.addEventListener('wheel', wheelListener.current);
+};
+
 export const MacbookPro = (): JSX.Element => {
   // Ref and state for scroll-driven parallax animation
   const parallaxSectionRef = useRef<HTMLDivElement>(null);
@@ -169,39 +202,7 @@ export const MacbookPro = (): JSX.Element => {
 
       // Lock whenever the section is centred and we're not already locked.
       if (distanceFromCenter < 50 && !isLocked.current) {
-        if (!isLocked.current) {
-          isLocked.current = true;
-          lastScrollPosition.current = window.scrollY;
-          document.body.style.overflow = 'hidden';
-          
-          // Set up wheel event listener when locked
-          wheelListener.current = (e: WheelEvent) => {
-            setScrollProgress(prev => {
-              // Move progress forward (scroll down) or backward (scroll up).
-              const newProgress = Math.max(
-                0,
-                Math.min(1, prev + (e.deltaY / (vh * 6)))
-              );
-              
-              // Update animation step
-              const step = Math.floor(newProgress * (images.length - 1));
-              setAnimationStep(step);
-
-              // Unlock when we reach either edge (0 or 1)
-              if (newProgress <= 0.001 || newProgress >= 0.999) {
-                isLocked.current = false;
-                document.body.style.overflow = '';
-                if (wheelListener.current) {
-                  window.removeEventListener('wheel', wheelListener.current);
-                  wheelListener.current = null;
-                }
-              }
-
-              return newProgress;
-            });
-          };
-          window.addEventListener('wheel', wheelListener.current);
-        }
+        lockParallax();
       } else if (isLocked.current) {
         isLocked.current = false;
         document.body.style.overflow = '';
@@ -263,8 +264,8 @@ export const MacbookPro = (): JSX.Element => {
       },
       {
         root: null,
-        threshold: 0.1,
-        rootMargin: '0px 0px -50% 0px'
+        threshold: 0,
+        rootMargin: '0px 0px -40% 0px'
       }
     );
 
