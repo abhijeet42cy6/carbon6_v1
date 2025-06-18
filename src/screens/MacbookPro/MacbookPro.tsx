@@ -145,89 +145,49 @@ export const MacbookPro = (): JSX.Element => {
     },
   ];
 
-  // helper: lock page and attach wheel listener
-  const lockParallax = () => {
-    if (isLocked.current) return;
-
-    const vh = window.innerHeight;
-    isLocked.current = true;
-    lastScrollPosition.current = window.scrollY;
-    document.body.style.overflow = 'hidden';
-
-    wheelListener.current = (e: WheelEvent) => {
-      e.preventDefault(); // Prevent default scroll
-      setScrollProgress((prev: number) => {
-        const newProgress = Math.max(
-          0,
-          Math.min(1, prev + e.deltaY / (vh * 4))   // Increased sensitivity by reducing divisor
-        );
-
-        setAnimationStep(Math.floor(newProgress * (images.length - 1)));
-
-        // Only unlock at the very ends and after a small delay
-        if (newProgress <= 0 || newProgress >= 1) {
-          setTimeout(() => {
-            isLocked.current = false;
-            document.body.style.overflow = '';
-            if (wheelListener.current) {
-              window.removeEventListener('wheel', wheelListener.current);
-              wheelListener.current = null;
-            }
-          }, 100); // Small delay before unlocking
-        }
-        return newProgress;
-      });
-    };
-    window.addEventListener('wheel', wheelListener.current, { passive: false });
-  };
-
   // Scroll-driven parallax effect
   useEffect(() => {
     const handleScroll = () => {
-      if (!contentRef.current || !parallaxSectionRef.current) return;
+      if (!parallaxSectionRef.current) return;
 
-      const rect = contentRef.current.getBoundingClientRect();
+      const parallaxSection = parallaxSectionRef.current;
+      const rect = parallaxSection.getBoundingClientRect();
       const vh = window.innerHeight;
 
-      // Calculate how centered the content is in the viewport
-      const contentCenter = rect.top + rect.height / 2;
-      const viewportCenter = vh / 2;
-      const distanceFromCenter = Math.abs(contentCenter - viewportCenter);
+      // We want the animation to happen while the contentRef (the sticky part)
+      // is visible and "stuck". The parallaxSectionRef is the scrollable container for it.
+      // The animation starts when the top of the parallax section hits the top of the viewport
+      // and ends when the bottom of the parallax section leaves the top of the viewport.
+      
+      const scrollableHeight = parallaxSection.scrollHeight - vh;
+      // rect.top is negative as we scroll down past the top of the element.
+      // We want progress to be 0 when rect.top is 0, and 1 when we've scrolled
+      // through the entire scrollable height.
+      const currentScroll = -rect.top;
+      
+      let progress = Math.max(0, Math.min(1, currentScroll / scrollableHeight));
 
-      // Snap progress to 0 or 1 when the user fully exits the section so the
-      // next entry starts at the corresponding edge.
-      if (rect.top > vh) {
-        setScrollProgress(0);
+      // Snap to edges to ensure clean start/end states
+      if (rect.top > 0) {
+        progress = 0;
       }
-      if (rect.bottom < 0) {
-        setScrollProgress(1);
+      if (rect.bottom < vh) {
+        progress = 1;
       }
 
-      // Lock whenever the section is centred and we're not already locked.
-      if (distanceFromCenter < 50 && !isLocked.current) {
-        lockParallax();
-      } else if (isLocked.current) {
-        isLocked.current = false;
-        document.body.style.overflow = '';
-        if (wheelListener.current) {
-          window.removeEventListener('wheel', wheelListener.current);
-          wheelListener.current = null;
-        }
-      }
+      setScrollProgress(progress);
+
+      // Determine the current animation step based on progress
+      // We want to smoothly transition between steps, so we use progress directly
+      const step = Math.min(images.length - 1, Math.floor(progress * images.length));
+      setAnimationStep(step);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // initialize on mount
+    handleScroll(); // Initialize on mount
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      if (isLocked.current) {
-        document.body.style.overflow = '';
-        if (wheelListener.current) {
-          window.removeEventListener('wheel', wheelListener.current);
-          wheelListener.current = null;
-        }
-      }
     };
   }, []);
 
@@ -247,36 +207,6 @@ export const MacbookPro = (): JSX.Element => {
 
   const [particles] = useState(createParticles());
 
-  // Pre-load parallax images so they are cached before the section appears
-  useEffect(() => {
-    images.forEach((path) => {
-      const img = new Image();
-      img.src = `/${path}`;
-    });
-  }, []);
-
-  // IntersectionObserver to guarantee we lock when user blasts through quickly
-  useEffect(() => {
-    if (!parallaxSectionRef.current) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isLocked.current) {
-          lockParallax();
-        }
-      },
-      {
-        root: null,
-        threshold: [0, 0.1, 0.2], // Multiple thresholds for better detection
-        rootMargin: '-20% 0px -20% 0px' // Adjusted margins for earlier triggering
-      }
-    );
-
-    observer.observe(parallaxSectionRef.current);
-
-    return () => observer.disconnect();
-  }, []);
-
   // Hide scroll guide after first interaction
   useEffect(() => {
     const handleScroll = () => {
@@ -291,7 +221,7 @@ export const MacbookPro = (): JSX.Element => {
 
   return (
     <div className="flex flex-row justify-center w-full bg-black">
-      <div className="overflow-hidden w-full h-[8517px] relative" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="w-full h-[9600px] relative" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {/* Add keyframes for bounce animations at the top level */}
         <style>
           {`
@@ -482,18 +412,20 @@ export const MacbookPro = (): JSX.Element => {
         </section>
 
         {/* Supercharge Section */}
-        <h2 className="absolute w-[1193px] top-[1800px] left-0 right-0 mx-auto font-light text-white text-[50px] text-center tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica] spring-scale" style={{ 
-          animationDelay: '0.2s'
-        }}>
+        <section className="absolute w-full top-[1500px] left-0 h-[800px] flex items-center justify-center bg-black z-20">
+          <h2 className="w-[1193px] font-light text-white text-[50px] text-center tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica] spring-scale" style={{ 
+            animationDelay: '0.2s'
+          }}>
           Supercharge your auditing team with the power of AI- research,
           strategize, audit and generate reports instantaneously
         </h2>
+        </section>
 
         {/* Parallax Section */}
         <section
           ref={parallaxSectionRef}
-          className="absolute w-full top-[1800px] left-0"
-          style={{ height: `calc(100vh + ${CAROUSEL_HEIGHT}px)` }}
+          className="absolute w-full top-[2300px] left-0"
+          style={{ height: `3500px` }}
         >
           {/* Progress indicator */}
           <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-50">
@@ -527,8 +459,8 @@ export const MacbookPro = (): JSX.Element => {
 
           <div
             ref={contentRef}
-            className="max-w-[1400px] mx-auto h-[540px] flex justify-between relative"
-            style={{ position: 'sticky', top: '50%', transform: 'translateY(-50%)' }}
+            className="max-w-[1400px] mx-auto h-screen flex justify-between items-center relative"
+            style={{ position: 'sticky', top: '0px' }}
           >
             {/* Tile overlay for parallax area */}
             <div className="absolute inset-0 pointer-events-none z-0">
@@ -554,96 +486,96 @@ export const MacbookPro = (): JSX.Element => {
               ))}
           </div>
 
-            {/* Left side - Image Container - Now sticky */}
-            <div className="w-[600px] relative" style={{ position: 'sticky', top: '50%', transform: 'translateY(calc(-50% + 300px))' }}>
-              <div className="h-[540px] flex items-center justify-center">
-                <div className="relative w-[540px] h-[540px] overflow-hidden rounded-lg shadow-xl bg-black flex items-center justify-center">
-                  {images.map((imagePath, idx) => (
-                    <img
-                      key={idx}
-                      className="absolute inset-0 w-full h-full object-contain transition-all duration-1000"
-                      alt={texts[idx].highlight}
-                      src={`/${imagePath}`}
-                      style={{
-                        opacity: animationStep === idx ? 1 : 0,
-                        transform: 'none',
-                        transition: 'opacity 0.5s ease, transform 0.5s ease',
-                        zIndex: animationStep === idx ? 1 : 0,
-                        display: Math.abs(animationStep - idx) > 1 ? 'none' : 'block' // Only render nearby images
-                      }}
-                      onError={(e) => {
-                        console.error(`Failed to load image: ${imagePath}`);
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ))}
-                </div>
+            {/* Left side - Image Container */}
+            <div className="w-[600px] flex items-center justify-center">
+              <div className="relative w-[540px] h-[540px] overflow-hidden rounded-lg shadow-xl bg-black flex items-center justify-center">
+                {images.map((imagePath, idx) => (
+                  <img
+                    key={idx}
+                    className="absolute inset-0 w-full h-full object-contain transition-all duration-1000"
+                    alt={texts[idx].highlight}
+                    src={`/${imagePath}`}
+                    style={{
+                      opacity: animationStep === idx ? 1 : 0,
+                      transform: 'none',
+                      transition: 'opacity 0.5s ease, transform 0.5s ease',
+                      zIndex: animationStep === idx ? 1 : 0,
+                      display: Math.abs(animationStep - idx) > 1 ? 'none' : 'block' // Only render nearby images
+                    }}
+                    onError={(e) => {
+                      console.error(`Failed to load image: ${imagePath}`);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ))}
               </div>
             </div>
             
-            {/* Right side - Text sections - Now scrolling */}
-            <div className="w-[600px] relative overflow-hidden">
-              <div 
-                className="absolute top-0 left-0 w-full"
-                style={{
-                  transform: `translateY(${-scrollProgress * (texts.length - 1) * 100}vh)`,
-                  transition: 'none'
-                }}
-              >
-                {texts.map((t, idx) => (
-                  <div
-                    key={idx}
-                    className="h-[100vh] flex flex-col justify-center relative"
-                  >
-                    <div className="space-y-4">
-                      {/* Pre text line */}
-                      {t.pre && (
-                        <div className="font-light text-[50px] tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica] text-white">
-                          {t.pre}
+            {/* Right side - Text sections */}
+            <div className="w-[600px] flex items-center justify-center">
+              <div className="w-[540px] h-[540px] relative overflow-hidden rounded-lg">
+                <div 
+                  className="absolute top-0 left-0 w-full"
+                  style={{
+                    transform: `translateY(${-scrollProgress * (texts.length - 1) * CAROUSEL_HEIGHT}px)`,
+                    transition: 'none'
+                  }}
+                >
+                  {texts.map((t, idx) => (
+                    <div
+                      key={idx}
+                      className="h-[540px] flex flex-col justify-center relative px-12"
+                    >
+                      <div className="space-y-4">
+                        {/* Pre text line */}
+                        {t.pre && (
+                          <div className="font-light text-[50px] tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica] text-white">
+                            {t.pre}
+                          </div>
+                        )}
+                        
+                        {/* Highlight text line */}
+                        <div className="font-light text-[50px] tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica]">
+                          <span style={{ 
+                            color: t.highlightColor,
+                            textShadow: '0 0 20px ' + t.highlightColor + '40'
+                          }}>{t.highlight}</span>
                         </div>
-                      )}
-                      
-                      {/* Highlight text line */}
-                      <div className="font-light text-[50px] tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica]">
-                        <span style={{ 
-                          color: t.highlightColor,
-                          textShadow: '0 0 20px ' + t.highlightColor + '40'
-                        }}>{t.highlight}</span>
+                        
+                        {/* Post text line */}
+                        {t.post && (
+                          <div className="font-light text-[50px] tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica] text-white">
+                            {t.post}
+                          </div>
+                        )}
                       </div>
                       
-                      {/* Post text line */}
-                      {t.post && (
-                        <div className="font-light text-[50px] tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica] text-white">
-                          {t.post}
-                        </div>
-                      )}
+                      {/* Description text - split into lines */}
+                      <div className="mt-10">
+                        {t.description.split('. ').map((line, lineIdx) => (
+                          <div
+                            key={lineIdx}
+                            className="font-light text-white text-xl tracking-[0] leading-[1.8] font-['Alliance_No.2-Light',Helvetica]"
+                          >
+                            {line + (lineIdx < t.description.split('. ').length - 1 ? '.' : '')}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    
-                    {/* Description text - split into lines */}
-                    <div className="mt-10">
-                      {t.description.split('. ').map((line, lineIdx) => (
-                        <div
-                          key={lineIdx}
-                          className="font-light text-white text-xl tracking-[0] leading-[1.8] font-['Alliance_No.2-Light',Helvetica]"
-                        >
-                          {line + (lineIdx < t.description.split('. ').length - 1 ? '.' : '')}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         <img
-          className="absolute w-[1432px] h-[652px] top-[3327px] left-0 right-0 mx-auto object-cover rounded-[10px]"
+          className="absolute w-[1432px] h-[652px] top-[5900px] left-0 right-0 mx-auto object-cover rounded-[10px]"
           alt="Satellite Image"
           src={`${window.location.origin}/image-303.jpg`}
         />
 
-        <div className="absolute w-[1432px] h-[652px] top-[3326px] left-0 right-0 mx-auto bg-[#10101094] flex flex-col justify-end rounded-[10px]">
+        <div className="absolute w-[1432px] h-[652px] top-[5899px] left-0 right-0 mx-auto bg-[#10101094] flex flex-col justify-end rounded-[10px]">
           <div className="absolute top-4 right-6 font-light text-white text-base tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica]">
             Location: Jk Papers Unit CPM Songadh
           </div>
@@ -665,7 +597,7 @@ export const MacbookPro = (): JSX.Element => {
 
         {/* Gradient Tile Separator Section */}
         <section
-          className="absolute w-full h-[300px] top-[4000px] left-0 overflow-hidden"
+          className="absolute w-full h-[300px] top-[6650px] left-0 overflow-hidden"
           style={{
             background:
               'linear-gradient(to bottom, #000000 0%, #141414 10%, #2b2b2b 25%, #4c4c4c 45%, #6f6f6f 65%, #9c9c9c 85%, #ffffff 100%)',
@@ -680,7 +612,7 @@ export const MacbookPro = (): JSX.Element => {
         </section>
 
         {/* White Container Section with Table */}
-        <section className="absolute w-full min-h-[calc(100vh+200px)] top-[4200px] left-0 bg-white">
+        <section className="absolute w-full min-h-[calc(80vh)] top-[6950px] left-0 bg-white">
           <div className="w-full max-w-[1200px] mx-auto pt-20 pb-40">
             <div className="mt-[50px]">
               <h2 className="font-light text-black text-4xl tracking-[0] leading-[normal] text-center mb-16 font-['Alliance_No.2-Light',Helvetica]">
@@ -701,7 +633,7 @@ export const MacbookPro = (): JSX.Element => {
                     </div>
                   </div>
                 </div>
-
+                
                 {/* Row 2 */}
                 <div className="flex">
                   <div className="w-[312px] p-2 bg-white text-black border-b border-solid border-gray-300">
@@ -735,14 +667,14 @@ export const MacbookPro = (): JSX.Element => {
         </section>
 
         {/* New Era Section */}
-        <section className="absolute w-full h-[700px] top-[4800px] left-0 flex flex-col items-center justify-center">
+        <section className="absolute w-full h-[700px] top-[7550px] left-0 flex flex-col items-center justify-center">
           {/* Background image - full viewport with proper centering */}
           <div className="absolute inset-0 w-full h-full">
             <img 
               src="/Last-CTA-wallpaper.png" 
               alt="Blue gradient background" 
               className="w-full h-full object-cover"
-          />
+            />
           </div>
           
           {/* Semi-transparent overlay for depth */}
@@ -769,7 +701,7 @@ export const MacbookPro = (): JSX.Element => {
         </section>
 
         {/* API Section */}
-        <section className="absolute w-full min-h-[600px] top-[6000px] left-0 bg-black pt-20 pb-40">
+        <section className="absolute w-full min-h-[800px] top-[8250px] left-0 bg-black pt-20 pb-40">
           <div className="w-full max-w-[1200px] mx-auto px-4">
             <h2 className="font-light text-white text-5xl tracking-[0] leading-[normal] mb-16 font-['Alliance_No.2-Light',Helvetica] ml-4">
               Explore our APIs
