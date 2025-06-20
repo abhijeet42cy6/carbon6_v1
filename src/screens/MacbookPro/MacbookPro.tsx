@@ -138,7 +138,7 @@ export const MacbookPro = (): JSX.Element => {
     {
       id: "strategic",
       questions: [
-        "What is the emission calculation methodology for steel production according to GHG protocol",
+        "What is the emission calculation methodology for steel production according to GHG protocol?",
       ],
     },
   ];
@@ -157,7 +157,7 @@ export const MacbookPro = (): JSX.Element => {
     {
       id: "strategic",
       title: "Strategic sustainability intelligence",
-      question: "What is the emission calculation methodology for steel production according to GHG protocol",
+      question: "What is the emission calculation methodology for steel production according to GHG protocol?",
     },
   ];
 
