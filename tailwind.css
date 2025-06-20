@@ -6,6 +6,48 @@
   .all-\[unset\] {
     all: unset;
   }
+
+  .reveal {
+    display: block;
+    margin-bottom: 0.2em;
+    transform-origin: center;
+    position: relative;
+  }
+
+  .reveal .word {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(50px);
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), 
+                transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: opacity, transform;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .in-view .word {
+    opacity: 1;
+    transform: translateY(0);
+    animation: subtle-glow 1.5s cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  /* Reset animation when element leaves viewport */
+  .reveal:not(.in-view) .word {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+}
+
+@keyframes subtle-glow {
+  0% {
+    text-shadow: none;
+  }
+  50% {
+    text-shadow: 0 0 18px rgba(59, 130, 246, 0.7), 0 0 29px rgba(59, 130, 246, 0.47);
+  }
+  100% {
+    text-shadow: none;
+  }
 }
 
 @layer base {

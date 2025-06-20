@@ -13,6 +13,7 @@ import {
 // @ts-ignore - external file not in TS compilation scope
 import TiledBackgroundExternal from "../../../TILE/src/components/TiledBackground";
 import type { FC, ReactNode } from "react";
+import { useInView } from "../../hooks/useInView";
 const TiledBackground: FC<{ children?: ReactNode }> = TiledBackgroundExternal as unknown as FC<{ children?: ReactNode }>;
 
 // manually coded
@@ -72,7 +73,13 @@ const texts = [
 ];
 
 // Height of the carousel (image/text) container in pixels
-const CAROUSEL_HEIGHT = 540;
+const CAROUSEL_HEIGHT = 580;
+
+const superchargeText = [
+  'Supercharge your auditing team with the power of',
+  'AI- research, strategize, audit and generate reports',
+  'instantaneously'
+];
 
 export const MacbookPro = (): JSX.Element => {
   // Ref and state for scroll-driven parallax animation
@@ -84,6 +91,17 @@ export const MacbookPro = (): JSX.Element => {
   const lastScrollPosition = useRef(0);
   const wheelListener = useRef<((e: WheelEvent) => void) | null>(null);
   const [showScrollGuide, setShowScrollGuide] = useState(true);
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+  const answersSectionRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+
+  const lineRefs = [
+    useInView({ threshold: 0.5 }),
+    useInView({ threshold: 0.5 }),
+    useInView({ threshold: 0.5 })
+  ];
 
   // Data for the tabs section
   const tabCategories = [
@@ -122,6 +140,24 @@ export const MacbookPro = (): JSX.Element => {
       questions: [
         "What is the emission calculation methodology for steel production according to GHG protocol",
       ],
+    },
+  ];
+
+  const questionsData = [
+    {
+      id: "global",
+      title: "Global sustainability intelligence",
+      question: "What is the emission factor for diesel SUV vehicles in Mumbai?",
+    },
+    {
+      id: "company",
+      title: "Company data and analytics",
+      question: "What is your competitor name* scope 1 emission from satellite data?",
+    },
+    {
+      id: "strategic",
+      title: "Strategic sustainability intelligence",
+      question: "What is the emission calculation methodology for steel production according to GHG protocol",
     },
   ];
 
@@ -219,10 +255,75 @@ export const MacbookPro = (): JSX.Element => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [showScrollGuide]);
 
+  // Parallax effect for the "Answers" section
+  useEffect(() => {
+    const handleAnswersScroll = () => {
+      if (!answersSectionRef.current) return;
+
+      const section = answersSectionRef.current;
+      const rect = section.getBoundingClientRect();
+      const vh = window.innerHeight;
+
+      // Only run if the section is somewhat in the viewport
+      if (rect.top > vh || rect.bottom < 0) return;
+
+      // Calculate the progress of scrolling through the section
+      const scrollableHeight = section.scrollHeight - vh;
+      let progress = (vh - rect.top) / scrollableHeight;
+      progress = Math.max(0, Math.min(1, progress));
+      
+      // Determine which question should be active
+      const step = Math.min(questionsData.length - 1, Math.floor(progress * questionsData.length));
+      setActiveQuestionIndex(step);
+    };
+
+    window.addEventListener('scroll', handleAnswersScroll, { passive: true });
+    handleAnswersScroll(); // Initial check
+
+    return () => {
+      window.removeEventListener('scroll', handleAnswersScroll);
+    };
+  }, []);
+
+  // Effect to handle scroll and update the active card
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    cardRefs.current = cardRefs.current.slice(0, questionsData.length);
+
+    const handleScroll = () => {
+      const containerCenter = container.scrollLeft + container.clientWidth / 2;
+      let closestIndex = 0;
+      let smallestDistance = Infinity;
+
+      cardRefs.current.forEach((card, index) => {
+        if (card) {
+          const cardCenter = card.offsetLeft + card.clientWidth / 2;
+          const distance = Math.abs(containerCenter - cardCenter);
+          if (distance < smallestDistance) {
+            smallestDistance = distance;
+            closestIndex = index;
+          }
+        }
+      });
+
+      if (activeCardIndex !== closestIndex) {
+        setActiveCardIndex(closestIndex);
+      }
+    };
+
+    handleScroll(); // Initial check
+    container.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [questionsData, activeCardIndex]);
+
   return (
     <div className="flex flex-row justify-center w-full bg-black">
-      <div className="w-full h-[9600px] relative" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        {/* Add keyframes for bounce animations at the top level */}
+      <div className="w-full h-[10600px] relative" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         <style>
           {`
             @keyframes springScale {
@@ -276,6 +377,14 @@ export const MacbookPro = (): JSX.Element => {
             .hover-lift:hover {
               transform: translateY(-2px) scale(1.015);
               box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            }
+
+            .hide-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+            .hide-scrollbar {
+              -ms-overflow-style: none;  /* IE and Edge */
+              scrollbar-width: none;  /* Firefox */
             }
           `}
         </style>
@@ -398,7 +507,7 @@ export const MacbookPro = (): JSX.Element => {
         <section className="absolute w-[1140px] h-[683px] top-[850px] left-0 right-0 mx-auto bg-neutral-600 rounded-[10px] overflow-hidden spring-scale delay-400">
           {/* Video placeholder - will be replaced with actual video */}
           <div className="w-full h-full flex items-center justify-center">
-            <div className="text-white text-2xl">Video Placeholder</div>
+            <div className="text-white text-2xl">Stay Tuned...</div>
             {/* Uncomment and update the src when video is ready */}
             {/* <video 
               className="w-full h-full object-cover"
@@ -412,12 +521,32 @@ export const MacbookPro = (): JSX.Element => {
         </section>
 
         {/* Supercharge Section */}
-        <section className="absolute w-full top-[1500px] left-0 h-[800px] flex items-center justify-center bg-black z-20">
-          <h2 className="w-[1193px] font-light text-white text-[50px] text-center tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica] spring-scale" style={{ 
-            animationDelay: '0.2s'
-          }}>
-          Supercharge your auditing team with the power of AI- research,
-          strategize, audit and generate reports instantaneously
+        <section
+          className="absolute w-full top-[1500px] left-0 h-[800px] flex items-center justify-center bg-black z-20"
+        >
+          <h2
+            className="w-[1193px] font-light text-white text-[50px] text-center tracking-[0] leading-[1.3] font-['Alliance_No.2-Light',Helvetica] flex flex-col items-center justify-center"
+          >
+            {superchargeText.map((line, lineIndex) => (
+              <div 
+                key={lineIndex} 
+                ref={lineRefs[lineIndex].ref}
+                className={`block reveal min-h-[1.3em] ${lineRefs[lineIndex].inView ? 'in-view' : ''}`}
+              >
+                {line.split(' ').map((word, wordIndex) => (
+                  <span
+                    key={`${lineIndex}-${wordIndex}`}
+                    className="word inline-block"
+                    style={{
+                      transitionDelay: `${wordIndex * 100}ms`,
+                      marginLeft: wordIndex > 0 ? '0.3em' : '0'
+                    }}
+                  >
+                    {word}
+                  </span>
+                ))}
+              </div>
+            ))}
         </h2>
         </section>
 
@@ -425,7 +554,7 @@ export const MacbookPro = (): JSX.Element => {
         <section
           ref={parallaxSectionRef}
           className="absolute w-full top-[2300px] left-0"
-          style={{ height: `3500px` }}
+          style={{ height: `4500px` }}
         >
           {/* Progress indicator */}
           <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-50">
@@ -488,7 +617,7 @@ export const MacbookPro = (): JSX.Element => {
 
             {/* Left side - Image Container */}
             <div className="w-[600px] flex items-center justify-center">
-              <div className="relative w-[540px] h-[540px] overflow-hidden rounded-lg shadow-xl bg-black flex items-center justify-center">
+              <div className="relative w-[540px] h-[580px] overflow-hidden rounded-lg shadow-xl bg-black flex items-center justify-center">
                 {images.map((imagePath, idx) => (
                   <img
                     key={idx}
@@ -513,7 +642,7 @@ export const MacbookPro = (): JSX.Element => {
             
             {/* Right side - Text sections */}
             <div className="w-[600px] flex items-center justify-center">
-              <div className="w-[540px] h-[540px] relative overflow-hidden rounded-lg">
+              <div className="w-[540px] h-[580px] relative overflow-hidden rounded-lg">
                 <div 
                   className="absolute top-0 left-0 w-full"
                   style={{
@@ -524,18 +653,18 @@ export const MacbookPro = (): JSX.Element => {
                   {texts.map((t, idx) => (
                     <div
                       key={idx}
-                      className="h-[540px] flex flex-col justify-center relative px-12"
+                      className="h-[580px] flex flex-col justify-center relative px-12"
                     >
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {/* Pre text line */}
                         {t.pre && (
-                          <div className="font-light text-[50px] tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica] text-white">
+                          <div className="font-light text-[40px] tracking-[0] leading-tight font-['Alliance_No.2-Light',Helvetica] text-white">
                             {t.pre}
                           </div>
                         )}
                         
                         {/* Highlight text line */}
-                        <div className="font-light text-[50px] tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica]">
+                        <div className="font-light text-[40px] tracking-[0] leading-tight font-['Alliance_No.2-Light',Helvetica]">
                           <span style={{ 
                             color: t.highlightColor,
                             textShadow: '0 0 20px ' + t.highlightColor + '40'
@@ -544,18 +673,18 @@ export const MacbookPro = (): JSX.Element => {
                         
                         {/* Post text line */}
                         {t.post && (
-                          <div className="font-light text-[50px] tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica] text-white">
+                          <div className="font-light text-[40px] tracking-[0] leading-tight font-['Alliance_No.2-Light',Helvetica] text-white">
                             {t.post}
                           </div>
                         )}
                       </div>
                       
                       {/* Description text - split into lines */}
-                      <div className="mt-10">
+                      <div className="mt-8">
                         {t.description.split('. ').map((line, lineIdx) => (
                           <div
                             key={lineIdx}
-                            className="font-light text-white text-xl tracking-[0] leading-[1.8] font-['Alliance_No.2-Light',Helvetica]"
+                            className="font-light text-white text-base tracking-[0] leading-[1.45] font-['Alliance_No.2-Light',Helvetica]"
                           >
                             {line + (lineIdx < t.description.split('. ').length - 1 ? '.' : '')}
                           </div>
@@ -570,12 +699,12 @@ export const MacbookPro = (): JSX.Element => {
         </section>
 
         <img
-          className="absolute w-[1432px] h-[652px] top-[5900px] left-0 right-0 mx-auto object-cover rounded-[10px]"
+          className="absolute w-[1432px] h-[652px] top-[6900px] left-0 right-0 mx-auto object-cover rounded-[10px]"
           alt="Satellite Image"
           src={`${window.location.origin}/image-303.jpg`}
         />
 
-        <div className="absolute w-[1432px] h-[652px] top-[5899px] left-0 right-0 mx-auto bg-[#10101094] flex flex-col justify-end rounded-[10px]">
+        <div className="absolute w-[1432px] h-[652px] top-[6899px] left-0 right-0 mx-auto bg-[#10101094] flex flex-col justify-end rounded-[10px]">
           <div className="absolute top-4 right-6 font-light text-white text-base tracking-[0] leading-[normal] font-['Alliance_No.2-Light',Helvetica]">
             Location: Jk Papers Unit CPM Songadh
           </div>
@@ -597,7 +726,7 @@ export const MacbookPro = (): JSX.Element => {
 
         {/* Gradient Tile Separator Section */}
         <section
-          className="absolute w-full h-[300px] top-[6650px] left-0 overflow-hidden"
+          className="absolute w-full h-[300px] top-[7650px] left-0 overflow-hidden"
           style={{
             background:
               'linear-gradient(to bottom, #000000 0%, #141414 10%, #2b2b2b 25%, #4c4c4c 45%, #6f6f6f 65%, #9c9c9c 85%, #ffffff 100%)',
@@ -611,63 +740,51 @@ export const MacbookPro = (): JSX.Element => {
                 </div>
         </section>
 
-        {/* White Container Section with Table */}
-        <section className="absolute w-full min-h-[calc(80vh)] top-[6950px] left-0 bg-white">
-          <div className="w-full max-w-[1200px] mx-auto pt-20 pb-40">
-            <div className="mt-[50px]">
+        {/* White Container Section with Horizontal Scroll */}
+        <section className="absolute w-full top-[7950px] left-0 bg-white py-24 min-h-[600px]">
+          <div className="w-full max-w-[1200px] mx-auto">
               <h2 className="font-light text-black text-4xl tracking-[0] leading-[normal] text-center mb-16 font-['Alliance_No.2-Light',Helvetica]">
             Answers to all your questions are now here
           </h2>
-
-              <div className="w-full border border-solid border-gray-300">
-                {/* Row 1 */}
-                <div className="flex">
-                  <div className="w-[312px] p-2 bg-[#1E2E3B] text-white border-b border-solid border-gray-300">
-                    <div className="py-2 px-4 font-light text-lg font-['Alliance_No.2-Light',Helvetica]">
-                      Global sustainability intelligence
+            <div
+              ref={scrollContainerRef}
+              className="flex overflow-x-auto space-x-8 pb-8 hide-scrollbar"
+            >
+              {/* Padding elements to allow first and last cards to be centered */}
+              <div className="flex-none w-[calc(50%-225px-1rem)]" />
+              <div className="flex-none flex space-x-8">
+                {questionsData.map((item, index) => (
+                  <Card
+                    key={item.id}
+                    ref={(el) => (cardRefs.current[index] = el)}
+                    className="flex-none w-[450px] h-[250px] p-8 rounded-lg flex flex-col justify-between"
+                    style={{
+                      transform: `scale(${activeCardIndex === index ? 1.04 : 1})`,
+                      boxShadow: activeCardIndex === index 
+                        ? '0 8px 40px rgba(28, 114, 245, 0.4)' 
+                        : '0 4px 15px rgba(0, 0, 0, 0.1)',
+                      transition: 'transform 300ms ease, box-shadow 300ms ease',
+                      border: '1px solid #e5e7eb'
+                    }}
+                  >
+                    <div>
+                      <h3 className="font-medium text-2xl text-black mb-4">
+                        {item.title}
+                      </h3>
+                      <p className="font-light text-lg text-gray-600">
+                        {item.question}
+                      </p>
                     </div>
-                  </div>
-                  <div className="flex-1 p-2 border-b border-l border-solid border-gray-300">
-                    <div className="py-2 px-6 font-light text-lg font-['Alliance_No.2-Light',Helvetica]">
-                      What is the emission factor for diesel SUV vehicles in Mumbai?
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Row 2 */}
-                <div className="flex">
-                  <div className="w-[312px] p-2 bg-white text-black border-b border-solid border-gray-300">
-                    <div className="py-2 px-4 font-light text-lg font-['Alliance_No.2-Light',Helvetica]">
-                      Company data and analytics
-                    </div>
-                  </div>
-                  <div className="flex-1 p-2 border-b border-l border-solid border-gray-300">
-                    <div className="py-2 px-6 font-light text-lg font-['Alliance_No.2-Light',Helvetica]">
-                      What is your competitor name* scope 1 emission from satellite data?
-                    </div>
-                  </div>
-                </div>
-
-                {/* Row 3 */}
-                <div className="flex">
-                  <div className="w-[312px] p-2 bg-white text-black border-solid border-gray-300">
-                    <div className="py-2 px-4 font-light text-lg font-['Alliance_No.2-Light',Helvetica]">
-                      Strategic sustainability intelligence
-                    </div>
-                  </div>
-                  <div className="flex-1 p-2 border-l border-solid border-gray-300">
-                    <div className="py-2 px-6 font-light text-lg font-['Alliance_No.2-Light',Helvetica]">
-                      What is the emission calculation methodology for steel production according to GHG protocol
-                    </div>
-                  </div>
-                </div>
+                  </Card>
+                ))}
               </div>
+              <div className="flex-none w-[calc(50%-225px-1rem)]" />
             </div>
           </div>
         </section>
 
         {/* New Era Section */}
-        <section className="absolute w-full h-[700px] top-[7550px] left-0 flex flex-col items-center justify-center">
+        <section className="absolute w-full h-[700px] top-[8550px] left-0 flex flex-col items-center justify-center">
           {/* Background image - full viewport with proper centering */}
           <div className="absolute inset-0 w-full h-full">
             <img 
@@ -701,7 +818,7 @@ export const MacbookPro = (): JSX.Element => {
         </section>
 
         {/* API Section */}
-        <section className="absolute w-full min-h-[800px] top-[8250px] left-0 bg-black pt-20 pb-40">
+        <section className="absolute w-full min-h-[800px] top-[9250px] left-0 bg-black pt-20 pb-40">
           <div className="w-full max-w-[1200px] mx-auto px-4">
             <h2 className="font-light text-white text-5xl tracking-[0] leading-[normal] mb-16 font-['Alliance_No.2-Light',Helvetica] ml-4">
               Explore our APIs
