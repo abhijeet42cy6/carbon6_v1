@@ -396,7 +396,7 @@ export const MacbookPro = (): JSX.Element => {
                 <img
                 className="h-[34px] w-auto"
                 alt="Carbon6 Logo"
-                src="/logo.png"
+                src="/logo.svg"
                 />
               <span className="ml-[6px] font-semibold text-white text-xl tracking-[0] leading-[normal] font-['JetBrains_Mono_NL-SemiBold',Helvetica]">
                 CARBON6
